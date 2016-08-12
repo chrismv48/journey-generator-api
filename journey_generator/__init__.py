@@ -1,5 +1,4 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from journey_generator.models import db
 
 app = Flask(__name__)
