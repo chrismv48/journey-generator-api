@@ -27,7 +27,7 @@ class BaseResource(Resource):
             return result.as_dict(self.associated_objects)
         else:
             return {self.model_name: [result.as_dict(self.associated_objects) for result in
-                                      self.model_class.query.all()]}
+                                      self.model_class.query.limit(10)]}
 
     def put(self, id):
         current_model = self.model_class.query.get(id)

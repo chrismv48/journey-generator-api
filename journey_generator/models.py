@@ -1,5 +1,6 @@
 """Database models for IQ Analytics"""
 from sqlalchemy import func
+from sqlalchemy.dialects import postgresql
 from base import SerializedModel
 from flask_sqlalchemy import SQLAlchemy
 from flask import Flask
@@ -47,6 +48,16 @@ class Destinations(db.Model, SerializedModel):
     water_quality = db.Column(db.Float)
     comfortable_in_city = db.Column(db.Float)
     quality_of_greenery = db.Column(db.Float)
+    life_score = db.Column(db.Float)
+    nightlife_score= db.Column(db.Float)
+    leisure_score = db.Column(db.Float)
+    safety_score = db.Column(db.Float)
+    friendly_to_foreigners_score = db.Column(db.Float)
+    racism_score = db.Column(db.Float)
+    lgbt_friendly_score = db.Column(db.Float)
+    female_friendly_score = db.Column(db.Float)
+    tags = db.Column(postgresql.ARRAY(db.String))
+
 
 
 class Climate(db.Model, SerializedModel):
@@ -58,9 +69,11 @@ class Climate(db.Model, SerializedModel):
     month = db.Column(db.String)
     low_temp = db.Column(db.Integer, index=True)
     high_temp = db.Column(db.Integer, index=True)
-    humidity = db.Column(db.Integer, index=True)
-    windspeed = db.Column(db.Integer, index=True)
-    rainfall = db.Column(db.Integer, index=True)
+    humidity = db.Column(db.Float, index=True)
+    dew_point = db.Column(db.Float, index=True)
+    wind_speed = db.Column(db.Float, index=True)
+    rainfall = db.Column(db.Float, index=True)
+    cloud_cover = db.Column(db.Float, index=True)
 
     destination = db.relationship('Destinations', backref=db.backref('climate'))
 
