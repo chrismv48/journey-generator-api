@@ -10,7 +10,7 @@ DARK_SKY_URL = "https://api.forecast.io/forecast/" + DARK_SKY_API_KEY + "/{latit
 
 params = {'exclude': 'currently,minutely,hourly,alerts,flags'}
 headers = {'Accept-Encoding': 'gzip'}
-day_interval = 6
+day_interval = 5
 
 # TIME STRING FORMAT [YYYY]-[MM]-[DD]T[HH]:[MM]:[SS]
 
@@ -38,28 +38,32 @@ with app.app_context():
             result_dict = {}
             result_dict['city_id'] = destination.id
             result_dict['month'] = query_time.strftime('%B').lower()
-            result_dict['low_temp'] = daily_data.get('temperatureMin')
-            result_dict['high_temp'] = daily_data.get('temperatureMax')
-            result_dict['cloud_cover'] = daily_data.get('cloudCover')
-            result_dict['humidity'] = daily_data.get('humidity')
-            result_dict['dew_point'] = daily_data.get('dewPoint')
-            result_dict['wind_speed'] = daily_data.get('windSpeed')
-            result_dict['rainfall'] = daily_data.get('precipIntensity')
-
+            result_dict['apparent_low_temp'] = daily_data.get('apparentTemperatureMin', 0)
+            result_dict['low_temp'] = daily_data.get('temperatureMin', 0)
+            result_dict['apparent_high_temp'] = daily_data.get('apparentTemperatureMax', 0)
+            result_dict['high_temp'] = daily_data.get('temperatureMax', 0)
+            result_dict['cloud_cover'] = daily_data.get('cloudCover', 0)
+            result_dict['humidity'] = daily_data.get('humidity', 0)
+            result_dict['dew_point'] = daily_data.get('dewPoint', 0)
+            result_dict['wind_speed'] = daily_data.get('windSpeed', 0)
+            result_dict['rain_probability'] = daily_data.get('precipProbability') if daily_data.get('precipType') \
+                                                                                       == 'rain' else 0
             results.append(result_dict)
 
         df = pd.DataFrame(results)
         averaged_results = df.groupby(['city_id','month']).mean().reset_index().to_dict('records')
 
-        for row in averaged_results:
-            result = db.session.query(Climate).filter(Climate.city_id == row['city_id'],
-                                             Climate.month == row['month']).first()
-            if result:
-                print 'Existing row found, updating...'
-                row.pop('high_temp')
-                row.pop('low_temp')
-                result.from_dict(row)
-            else:
-                print 'No existing row found, adding new row...'
-                db.session.add(Climate(**row))
-            db.session.commit()
+        db.session.add_all([Climate(**row) for row in averaged_results])
+        db.session.commit()
+        # for row in averaged_results:
+        #     result = db.session.query(Climate).filter(Climate.city_id == row['city_id'],
+        #                                      Climate.month == row['month']).first()
+        #     if result:
+        #         print 'Existing row found, updating...'
+        #         row.pop('high_temp')
+        #         row.pop('low_temp')
+        #         result.from_dict(row)
+        #     else:
+        #         print 'No existing row found, adding new row...'
+        #         db.session.add(Climate(**row))
+        #     db.session.commit()
