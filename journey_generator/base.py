@@ -27,7 +27,8 @@ class BaseResource(Resource):
             return result.as_dict(self.associated_objects)
         else:
             return {self.model_name: [result.as_dict(self.associated_objects) for result in
-                                      self.model_class.query.limit(10)]}
+                                      self.model_class.query.filter(
+                                          self.model_class.composite_safety_score is not None).limit(50)]}
 
     def put(self, id):
         current_model = self.model_class.query.get(id)

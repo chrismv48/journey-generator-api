@@ -1,8 +1,9 @@
 import time
 
-from geomind_data import load_geomind_data
 import requests
-from models import db, Countries, Destinations, Climate
+
+from journey_generator import app, db
+from models import Destinations
 from random import choice
 import re
 from lxml import etree
@@ -14,19 +15,11 @@ USER_AGENTS = [
     'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) like Gecko',
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10; rv:33.0) Gecko/20100101 Firefox/33.0']
 
-# cities = load_geomind_data()
-# countries = [i.as_dict() for i in Countries.query.all()]
-cities = [i.as_dict() for i in Destinations.query.all()]
-# existing_city_key = [existing_city.city_name + existing_city.country_code for existing_city in existing_cities]
-# cities_key = [city['name'] + city['country_code'] for city in cities]
-# remaining_cities = [city for i, city in enumerate(cities) if cities_key[i] not in existing_city_key]
 
-
-# for city in cities:
-#     country = [country for country in countries if country['countrycode'] == city['country_code']]
-#     if country:
-#         city.update(country[0])
-
+with app.app_context():
+    cities = [i.as_dict() for i in Destinations.query.filter(Destinations.country_code == 'US',
+                                                             Destinations.insulted == None).all()]
+print len(cities)
 base_url = "http://www.numbeo.com/{section}/city_result.jsp"
 results = []
 counter = 0
@@ -34,25 +27,27 @@ counter = 0
 for city in cities:
     print counter
     counter += 1
-    if city['country_code'] == 'US':
-        continue
 
     params = {"country": city['country_name'],
-              "city": city['ascii_name'],
+              "city": city['ascii_name'] + ', ' + city['state'],
               "displayCurrency": "USD"}
 
-    # numbeo_url = base_url.format(section="travel-prices")
-    # response = requests.get(numbeo_url, params=params, headers={'User-Agent': choice(USER_AGENTS)})
-    # print response.request.url
-    # price_results = re.findall('= (\d+\.\d+)', response.content)
-    # if len(price_results) != 2:
-    #     print 'No price found, skipping'
-    #     continue
-
-    # backpacker_price, normal_price = map(float, price_results)
-    # print price_results
+    ### GET COST OF LIVING DATA ###
 
     results = {}
+
+    numbeo_url = base_url.format(section="travel-prices")
+    response = requests.get(numbeo_url, params=params, headers={'User-Agent': choice(USER_AGENTS)})
+    print response.request.url
+    if "Numbeo doesn't have that city in the database." in response.content:
+        print 'City not in database, skipping.'
+        continue
+
+    price_results = re.findall('= (\d+\.\d+)', response.content)
+    if len(price_results) == 2:
+        results['backpacker_price'] = price_results[0]
+        results['normal_price'] = price_results[1]
+
 
     ### GET CRIME DATA ###
     numbeo_url = base_url.format(section="crime")
@@ -108,54 +103,13 @@ for city in cities:
     except IndexError:
         pass
 
-    ### GET CLIMATE DATA ###
-    numbeo_url = base_url.format(section="climate")
-    response = requests.get(numbeo_url, params=params, headers={'User-Agent': choice(USER_AGENTS)})
-    print response.request.url
-    tree = etree.fromstring(response.content, etree.HTMLParser())
-    climate_data = []
-
-    try:
-        climate_table = etree.tostring(tree.xpath('//table')[-3])
-        climate_values = re.findall('(\d+)&#8457;', climate_table)
-        months = [
-            "january",
-            "febuary",
-            "march",
-            "april",
-            "may",
-            "june",
-            "july",
-            "august",
-            "september",
-            "october",
-            "november",
-            "december"
-        ]
-        i = 0
-        for month in months:
-            climate_data.append({
-                "city_id": city['id'],
-                "month": month,
-                "low_temp": climate_values[i],
-                "high_temp": climate_values[i + 1]
-            })
-            i += 2
-
-    except IndexError:
-        pass
-
-    if results:
-        city.update(results)
-        db.session.merge(Destinations(**city))
-        db.session.commit()
-    if climate_data:
-        db.session.add_all([Climate(**climate_row) for climate_row in climate_data])
-        db.session.commit()
+    with app.app_context():
+        if results:
+            city.update(results)
+            db.session.merge(Destinations(**city))
+            db.session.commit()
 
     if counter % 50 == 0:
         time.sleep(60)
     else:
         time.sleep(2)
-
-print 'foo'

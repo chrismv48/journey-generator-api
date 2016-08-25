@@ -1,6 +1,8 @@
 """Database models for IQ Analytics"""
 from sqlalchemy import func
 from sqlalchemy.dialects import postgresql
+from sqlalchemy.orm import deferred
+
 from base import SerializedModel
 from flask_sqlalchemy import SQLAlchemy
 from flask import Flask
@@ -12,11 +14,12 @@ class Destinations(db.Model, SerializedModel):
     __tablename__ = "destinations"
 
     id = db.Column(db.Integer, autoincrement=True, primary_key=True)
-    city_name = db.Column(db.String)
+    city_name = deferred(db.Column(db.String))
     ascii_name = db.Column(db.String)
     latitude = db.Column(db.String)
     longitude = db.Column(db.String)
     country_code = db.Column(db.String)
+    state = db.Column(db.String)
     population = db.Column(db.Integer)
     timezone = db.Column(db.String)
     modification_date = db.Column(db.Date)
@@ -24,7 +27,6 @@ class Destinations(db.Model, SerializedModel):
     continent_name = db.Column(db.String)
     backpacker_price = db.Column(db.Float)
     normal_price = db.Column(db.Float)
-    safety_index = db.Column(db.Float)
     overall_crime = db.Column(db.Float)
     crime_increasing_3yrs = db.Column(db.Float)
     home_theft = db.Column(db.Float)
@@ -48,16 +50,75 @@ class Destinations(db.Model, SerializedModel):
     water_quality = db.Column(db.Float)
     comfortable_in_city = db.Column(db.Float)
     quality_of_greenery = db.Column(db.Float)
-    life_score = db.Column(db.Float)
-    nightlife_score= db.Column(db.Float)
-    leisure_score = db.Column(db.Float)
     safety_score = db.Column(db.Float)
-    friendly_to_foreigners_score = db.Column(db.Float)
-    racism_score = db.Column(db.Float)
-    lgbt_friendly_score = db.Column(db.Float)
-    female_friendly_score = db.Column(db.Float)
     tags = db.Column(postgresql.ARRAY(db.String))
-
+    amusement_park = db.Column(db.Float)
+    aquarium = db.Column(db.Float)
+    art_gallery = db.Column(db.Float)
+    bar = db.Column(db.Float)
+    cafe = db.Column(db.Float)
+    clothing_store = db.Column(db.Float)
+    department_store = db.Column(db.Float)
+    jewelry_store = db.Column(db.Float)
+    lodging = db.Column(db.Float)
+    museum = db.Column(db.Float)
+    night_club = db.Column(db.Float)
+    park = db.Column(db.Float)
+    restaurant = db.Column(db.Float)
+    shopping_mall = db.Column(db.Float)
+    spa = db.Column(db.Float)
+    stadium = db.Column(db.Float)
+    zoo = db.Column(db.Float)
+    amusement_park_index = db.Column(db.Float)
+    aquarium_index = db.Column(db.Float)
+    art_gallery_index = db.Column(db.Float)
+    bar_index = db.Column(db.Float)
+    cafe_index = db.Column(db.Float)
+    clothing_store_index = db.Column(db.Float)
+    department_store_index = db.Column(db.Float)
+    jewelry_store_index = db.Column(db.Float)
+    lodging_index = db.Column(db.Float)
+    museum_index = db.Column(db.Float)
+    night_club_index = db.Column(db.Float)
+    park_index = db.Column(db.Float)
+    restaurant_index = db.Column(db.Float)
+    shopping_mall_index = db.Column(db.Float)
+    spa_index = db.Column(db.Float)
+    stadium_index = db.Column(db.Float)
+    zoo_index = db.Column(db.Float)
+    amusement_park_label = db.Column(db.Float)
+    aquarium_label = db.Column(db.Float)
+    art_gallery_label = db.Column(db.Float)
+    bar_label = db.Column(db.Float)
+    cafe_label = db.Column(db.Float)
+    clothing_store_label = db.Column(db.Float)
+    department_store_label = db.Column(db.Float)
+    jewelry_store_label = db.Column(db.Float)
+    lodging_label = db.Column(db.Float)
+    museum_label = db.Column(db.Float)
+    night_club_label = db.Column(db.Float)
+    park_label = db.Column(db.Float)
+    restaurant_label = db.Column(db.Float)
+    shopping_mall_label = db.Column(db.Float)
+    spa_label = db.Column(db.Float)
+    stadium_label = db.Column(db.Float)
+    zoo_label = db.Column(db.Float)
+    attractions_score = db.Column(db.Float)
+    nightlife_score = db.Column(db.Float)
+    shopping_score = db.Column(db.Float)
+    culture_score = db.Column(db.Float)
+    dining_score = db.Column(db.Float)
+    lodging_score = db.Column(db.Float)
+    spas_score = db.Column(db.Float)
+    attractions_score_label = db.Column(db.Integer)
+    nightlife_score_label = db.Column(db.Integer)
+    shopping_score_label = db.Column(db.Integer)
+    culture_score_label = db.Column(db.Integer)
+    dining_score_label = db.Column(db.Integer)
+    lodging_score_label = db.Column(db.Integer)
+    spas_score_label = db.Column(db.Integer)
+    places_index = db.Column(db.Float)
+    places_index_label = db.Column(db.Integer)
 
 
 class Climate(db.Model, SerializedModel):
@@ -83,7 +144,7 @@ class Climate(db.Model, SerializedModel):
     cloud_cover_index = db.Column(db.Float, index=True)
     weather_index = db.Column(db.Float, index=True)
 
-    destination = db.relationship('Destinations', backref=db.backref('climate'))
+    destination = db.relationship('Destinations', backref=db.backref('climate', lazy='joined'), lazy='joined')
 
 
 class Countries(db.Model, SerializedModel):
@@ -93,3 +154,18 @@ class Countries(db.Model, SerializedModel):
     country_name = db.Column(db.String)
     continent_name = db.Column(db.String)
     continent = db.Column(db.String)
+
+
+class GeoMindCities(db.Model, SerializedModel):
+    __tablename__ = "geomind_cities"
+
+    geoname_id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
+    city_name = db.Column(db.String)
+    ascii_name = db.Column(db.String)
+    latitude = db.Column(db.String)
+    longitude = db.Column(db.String)
+    country_code = db.Column(db.String)
+    state = db.Column(db.String)
+    population = db.Column(db.Integer)
+    timezone = db.Column(db.String)
+    geomind_modification_date = db.Column(db.Date)
