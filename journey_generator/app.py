@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 from flask_restful import Resource, Api, abort, fields, marshal_with, reqparse
 from sqlalchemy import asc, desc, or_
@@ -6,6 +6,7 @@ from sqlalchemy.dialects import postgresql
 
 from journey_generator import app, db
 from journey_generator.base import BaseResource
+from journey_generator.settings import api_fields
 from models import Climate, Destinations
 
 api = Api(app)
@@ -38,18 +39,22 @@ def is_month(value, name):
         raise ValueError("Invalid month. Ensure you use the full unabbreviated month in all lower case.")
 
 
-destinations_parser = reqparse.RequestParser()
-destinations_parser.add_argument('month', type=is_month)
-destinations_parser.add_argument('sort_by', type=str)
-destinations_parser.add_argument('city_id', type=str, dest='id')
-destinations_parser.add_argument('country', type=str, dest='country_code')
-destinations_parser.add_argument('continent', type=str, dest='continent_name')
-destinations_parser.add_argument('population', type=str, action='append')
-destinations_parser.add_argument('safety_score', type=str, action='append')
-destinations_parser.add_argument('weather_index', type=str, action='append')
+
+def create_parser(api_fields):
+    parser = reqparse.RequestParser()
+    for api_field in api_fields:
+        parser.add_argument(api_field['api_name'],
+                            type=api_field['type'],
+                            default=api_field['default'],
+                            dest=api_field['name'],
+                            action=api_field['action'])
+
+    return parser
+
 
 def print_query(query, dialect=postgresql):
     print str(query.statement.compile(dialect=postgresql.dialect()))
+
 
 def get_model(field):
     for model in [Destinations, Climate]:
@@ -66,61 +71,66 @@ operator_map = {
     "in": "in_"
 }
 
-
 def convert_args_to_query(args):
     # Flask Restful annoyingly keeps keys with empty values
     args = {k: v for k, v in args.items() if v}
-
-    month = args.pop('month', None) or date.today().strftime('%B').lower()
-
-    sort_by, direction = args.pop('sort_by', None).split('.') if args.get('sort_by') else ('weather_index', 'desc')
-    sort_by_expression = getattr(getattr(get_model(sort_by), sort_by), direction)
-
-    locations = {}
-    locations["country_code"] = args.pop('country_code', None)
-    locations["continent_name"] = args.pop('continent_name', None)
-    locations["id"] = args.pop('id', None)
-
-    # base query will always have a sort by clause and month filter
-    destinations_query = db.session.query(Destinations, Climate).join(Climate).filter(
-        Climate.month == month).order_by(sort_by_expression())
-
-    if any(locations.values()):
-        or_filters = []
-        for field, op_value in locations.items():
-            if op_value:
-                operator, value_str = op_value.split(";")
-                values = (value_str).split(',')
-                model_field = getattr(Destinations, field)
-                or_filter = getattr(model_field, operator_map[operator])
-                or_filters.append(or_filter(values))
-
-        destinations_query = destinations_query.filter(or_(*or_filters))
-
+    location_fields = ["country_code", "id", "continent_name"]
+    location_filters = []
     filters = []
+
     for field, op_values in args.items():
         model = get_model(field)
-        for op_value in op_values:
-            operator, value = op_value.split(";")
+        # location fields are treated differently because the op_values are comma separated and they need to be
+        # combined into an OR statement. {"country": "gte;US,CA,GB"}
+        if field in location_fields:
+            operator, values_str = op_values.split(";")
+            location_values = (values_str).split(',')
             model_field = getattr(model, field)
-            filter_expression = getattr(model_field, operator_map[operator])
-            filters.append(filter_expression(value))
+            location_filter = getattr(model_field, operator_map[operator])
+            location_filters.append(location_filter(location_values))
 
-    destinations_query = destinations_query.filter(*filters)
+        # sort_by is treated differently because it doesn't need an operator and is parsed differently.
+        elif field == "sort_by":
+            sort_by_field, direction = op_values.split('.')
+            sort_by_expression = getattr(getattr(get_model(sort_by_field), sort_by_field), direction)
+        else:
+            # all other fields have action="append" which means even single values are lists
+            for op_value in op_values:
+                operator, value = op_value.split(";")
+                model_field = getattr(model, field)
+                filter_expression = getattr(model_field, operator_map[operator])
+                filters.append(filter_expression(value))
+
+    query_columns = generate_columns_query(api_fields)
+    destinations_query = db.session.query(*query_columns).filter(*filters).order_by(
+        sort_by_expression())
+    if location_fields:
+        destinations_query = destinations_query.filter(or_(*location_filters))
 
     return destinations_query
 
 
+def generate_columns_query(api_fields):
+    query_columns = []
+    for api_field in api_fields:
+        if api_field['name']:
+            field = api_field['name']
+            alias = api_field['api_name']
+            column = getattr(get_model(field), field)
+            aliased_column = getattr(column, "label")(alias)
+            query_columns.append(aliased_column)
+    return query_columns
+
 class DestinationsResource(Resource):
+    destinations_parser = create_parser(api_fields)
+
     def get(self):
-        args = dict(destinations_parser.parse_args())
+        args = dict(self.destinations_parser.parse_args())
         filtered_query = convert_args_to_query(args)
 
         results = []
-        for destination, climate in filtered_query.limit(30).all():
-            row_dict = destination.as_dict()
-            row_dict.update(climate.as_dict())
-            results.append(row_dict)
+        for row in filtered_query.limit(30).all():
+            results.append(row._asdict())
 
         return {"destinations": results}
 

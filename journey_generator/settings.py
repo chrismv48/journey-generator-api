@@ -1,5 +1,101 @@
+from datetime import date
+
 # SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://carmstrong@/journey_generator'
 SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://carmstrong:Dockside6@104.131.106.228:5432/journey_generator'
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 DARK_SKY_API_KEY = '7ae0a164364f2b21edef14fe7beca649'
+
+api_fields = [
+    {
+        "name": "month",
+        "api_name": "month",
+        "type": str,
+        "default": lambda: ["eq;" + date.today().strftime('%B').lower()],
+        "action": "append"
+    },
+    {
+        "name": None,
+        "api_name": "sort_by",
+        "type": str,
+        "default": 'weather_index.desc',
+        "action": None
+    },
+    {
+        "name": "id",
+        "api_name": "city_id",
+        "type": str,
+        "default": None,
+        "action": None
+    },
+    {
+        "name": "country_code",
+        "api_name": "country",
+        "type": str,
+        "default": None,
+        "action": None
+    },
+    {
+        "name": "continent_name",
+        "api_name": "continent",
+        "type": str,
+        "default": None,
+        "action": None
+    },
+    {
+        "name": "population",
+        "api_name": "population",
+        "type": str,
+        "default": None,
+        "action": "append"
+    },
+    {
+        "name": "safety_score",
+        "api_name": "safety_score",
+        "type": str,
+        "default": None,
+        "action": "append"
+    },
+    {
+        "name": "weather_index",
+        "api_name": "weather_index",
+        "type": str,
+        "default": None,
+        "action": "append"
+    },
+    {
+        "name": "attractions_score_label",
+        "api_name": "attractions",
+        "type": str,
+        "default": None,
+        "action": "append"
+    },
+    {
+        "name": "nightlife_score_label",
+        "api_name": "nightlife_score",
+        "type": str,
+        "default": None,
+        "action": "append"
+    },
+    {
+        "name": "shopping_score_label",
+        "api_name": "shopping_score",
+        "type": str,
+        "default": None,
+        "action": "append"
+    },
+    {
+        "name": "culture_score_label",
+        "api_name": "culture_score",
+        "type": str,
+        "default": None,
+        "action": "append"
+    },
+    {
+        "name": "dining_score_label",
+        "api_name": "dining_score",
+        "type": str,
+        "default": None,
+        "action": "append"
+    }
+]
