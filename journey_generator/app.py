@@ -39,7 +39,6 @@ def is_month(value, name):
         raise ValueError("Invalid month. Ensure you use the full unabbreviated month in all lower case.")
 
 
-
 def create_parser(api_fields):
     parser = reqparse.RequestParser()
     for api_field in api_fields:
@@ -71,6 +70,7 @@ operator_map = {
     "in": "in_"
 }
 
+
 def convert_args_to_query(args):
     # Flask Restful annoyingly keeps keys with empty values
     args = {k: v for k, v in args.items() if v}
@@ -79,31 +79,42 @@ def convert_args_to_query(args):
     filters = []
 
     for field, op_values in args.items():
-        model = get_model(field)
+        # model = get_model(field)
         # location fields are treated differently because the op_values are comma separated and they need to be
-        # combined into an OR statement. {"country": "gte;US,CA,GB"}
+        # combined into an OR statement. {"country": "in;US,CA,GB"}
         if field in location_fields:
             operator, values_str = op_values.split(";")
             location_values = (values_str).split(',')
-            model_field = getattr(model, field)
+            model_field = getattr(Destinations, field)
             location_filter = getattr(model_field, operator_map[operator])
             location_filters.append(location_filter(location_values))
 
         # sort_by is treated differently because it doesn't need an operator and is parsed differently.
         elif field == "sort_by":
             sort_by_field, direction = op_values.split('.')
-            sort_by_expression = getattr(getattr(get_model(sort_by_field), sort_by_field), direction)
+            try:
+                model_field = getattr(Destinations, sort_by_field)
+            except AttributeError:
+                model_field = getattr(Climate, sort_by_field)
+            sort_by_expression = getattr(model_field, direction)
         else:
             # all other fields have action="append" which means even single values are lists
             for op_value in op_values:
                 operator, value = op_value.split(";")
-                model_field = getattr(model, field)
+                try:
+                    value = float(value)
+                except ValueError:
+                    pass
+                try:
+                    model_field = getattr(Destinations, field)
+                except AttributeError:
+                    model_field = getattr(Climate, field)
                 filter_expression = getattr(model_field, operator_map[operator])
                 filters.append(filter_expression(value))
 
     query_columns = generate_columns_query(api_fields)
     destinations_query = db.session.query(*query_columns).filter(*filters).order_by(
-        sort_by_expression())
+        sort_by_expression()).filter(Climate.city_id == Destinations.id)
     if location_fields:
         destinations_query = destinations_query.filter(or_(*location_filters))
 
@@ -116,10 +127,15 @@ def generate_columns_query(api_fields):
         if api_field['name']:
             field = api_field['name']
             alias = api_field['api_name']
-            column = getattr(get_model(field), field)
+            # let's me get hybrid attributes
+            try:
+                column = getattr(Destinations, field)
+            except AttributeError:
+                column = getattr(Climate, field)
             aliased_column = getattr(column, "label")(alias)
             query_columns.append(aliased_column)
     return query_columns
+
 
 class DestinationsResource(Resource):
     destinations_parser = create_parser(api_fields)
@@ -155,7 +171,8 @@ class LocationsResource(Resource):
             city_label = ", ".join([i for i in [location.ascii_name, location.state, location.country_name] if i])
             locations_list.append({"label": city_label, "value": "city_id." + str(location.id)})
             if location.country_code not in countries:
-                locations_list.append({"label": location.country_name, "value": "country." + location.country_code})
+                locations_list.append({"label": location.country_name, "value": "country_code." +
+                                                                                location.country_code})
                 countries.append(location.country_code)
             if location.continent_name not in continents:
                 locations_list.append({"label": location.continent_name, "value":
@@ -170,4 +187,4 @@ api.add_resource(DestinationResource, '/destination/<int:id>')
 api.add_resource(LocationsResource, '/locations')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, threaded=True)

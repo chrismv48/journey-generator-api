@@ -3,6 +3,13 @@ import pandas as pd
 from journey_generator import app, db
 from journey_generator.models import Destinations
 
+def normalize_column(value, min, max, subtract_from_one=True):
+    if subtract_from_one:
+        return 1 - ((float(value) - min) / (max - min))
+    else:
+        return ((float(value) - min) / (max - min))
+
+
 with app.app_context():
     destinations = [i.as_dict() for i in Destinations.query.filter(Destinations.insulted != None).all()]
 
@@ -47,9 +54,10 @@ with app.app_context():
         return sum(row[weights.keys()] * weights.values())
 
 
-    df['safety_score'] = df.apply(lambda x: calculate_numbeo_safety_score(x, numbeo_safety_score_weights),
-                                         axis=1) / 100
-
+    df['safety_score'] = df.apply(lambda x: calculate_numbeo_safety_score(x, numbeo_safety_score_weights), axis=1) / 100
+    df['safety_score'] = df['safety_score'].apply(lambda x: normalize_column(x,
+                                                                             df['safety_score'].min(),
+                                                                             df['safety_score'].max()))
     # df['composite_safety_score'] = df['numbeo_safety_score'] * .5 + df['nomadlist_safety_score'] * .5
 
     counter = 0

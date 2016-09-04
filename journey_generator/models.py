@@ -2,6 +2,7 @@
 from sqlalchemy import func
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import deferred
+from sqlalchemy.ext.hybrid import hybrid_property
 
 from base import SerializedModel
 from flask_sqlalchemy import SQLAlchemy
@@ -119,6 +120,15 @@ class Destinations(db.Model, SerializedModel):
     spas_score_label = db.Column(db.Integer)
     places_index = db.Column(db.Float)
     places_index_label = db.Column(db.Integer)
+    population_label = db.Column(db.Integer)
+    safety_score_label = db.Column(db.Integer)
+
+    @hybrid_property
+    def avg_price(self):
+        if self.backpacker_price and self.normal_price:
+            return (self.backpacker_price + self.normal_price) / 2
+        else:
+            return None
 
 
 class Climate(db.Model, SerializedModel):
@@ -143,6 +153,7 @@ class Climate(db.Model, SerializedModel):
     cloud_cover = db.Column(db.Float, index=True)
     cloud_cover_index = db.Column(db.Float, index=True)
     weather_index = db.Column(db.Float, index=True)
+    weather_index_label = db.Column(db.Integer, index=True)
 
     destination = db.relationship('Destinations', backref=db.backref('climate', lazy='joined'), lazy='joined')
 

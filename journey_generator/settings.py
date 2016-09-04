@@ -8,6 +8,27 @@ DARK_SKY_API_KEY = '7ae0a164364f2b21edef14fe7beca649'
 
 api_fields = [
     {
+        "name": "ascii_name",
+        "api_name": "city_name",
+        "type": str,
+        "default": None,
+        "action": None
+    },
+    {
+        "name": "state",
+        "api_name": "us_state",
+        "type": str,
+        "default": None,
+        "action": None
+    },
+    {
+        "name": "country_name",
+        "api_name": "country_name",
+        "type": str,
+        "default": None,
+        "action": None
+    },
+    {
         "name": "month",
         "api_name": "month",
         "type": str,
@@ -30,7 +51,7 @@ api_fields = [
     },
     {
         "name": "country_code",
-        "api_name": "country",
+        "api_name": "country_code",
         "type": str,
         "default": None,
         "action": None
@@ -50,8 +71,36 @@ api_fields = [
         "action": "append"
     },
     {
+        "name": "population_label",
+        "api_name": "population_label",
+        "type": str,
+        "default": None,
+        "action": "append"
+    },
+    {
         "name": "safety_score",
         "api_name": "safety_score",
+        "type": str,
+        "default": None,
+        "action": "append"
+    },
+    {
+        "name": "safety_score_label",
+        "api_name": "safety_score_label",
+        "type": str,
+        "default": None,
+        "action": "append"
+    },
+    {
+        "name": "apparent_low_temp",
+        "api_name": "low_temp",
+        "type": str,
+        "default": None,
+        "action": "append"
+    },
+    {
+        "name": "apparent_high_temp",
+        "api_name": "high_temp",
         "type": str,
         "default": None,
         "action": "append"
@@ -64,8 +113,15 @@ api_fields = [
         "action": "append"
     },
     {
+        "name": "weather_index_label",
+        "api_name": "weather_index_label",
+        "type": str,
+        "default": None,
+        "action": "append"
+    },
+    {
         "name": "attractions_score_label",
-        "api_name": "attractions",
+        "api_name": "attractions_score",
         "type": str,
         "default": None,
         "action": "append"
@@ -94,6 +150,13 @@ api_fields = [
     {
         "name": "dining_score_label",
         "api_name": "dining_score",
+        "type": str,
+        "default": None,
+        "action": "append"
+    },
+    {
+        "name": "avg_price",
+        "api_name": "avg_price",
         "type": str,
         "default": None,
         "action": "append"
