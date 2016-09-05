@@ -30,23 +30,23 @@ def labelize(series, quantile_values=None, labels=None):
 
     return labeled_series
 
+def main():
+    with app.app_context():
+        # destinations = [i.as_dict() for i in Destinations.query.filter(Destinations.insulted != None).all()]
+        climates = [i.as_dict() for i in Climate.query.filter(Climate.weather_index != None).all()]
 
-with app.app_context():
-    # destinations = [i.as_dict() for i in Destinations.query.filter(Destinations.insulted != None).all()]
-    climates = [i.as_dict() for i in Climate.query.filter(Climate.weather_index != None).all()]
+        df = pd.DataFrame(climates)
+        df['weather_index_label'] = labelize(df['weather_index'])
+        # df['safety_score_label'] = labelize(df['safety_score'])
+        # normalized_population = df['population'].apply(lambda x: normalize_column(x,
+        #                                                                           df['population'].min(),
+        #                                                                           df['population'].max(),
+        #                                                                           subtract_from_one=False))
+        # df['we'] = labelize(normalized_population)
 
-    df = pd.DataFrame(climates)
-    df['weather_index_label'] = labelize(df['weather_index'])
-    # df['safety_score_label'] = labelize(df['safety_score'])
-    # normalized_population = df['population'].apply(lambda x: normalize_column(x,
-    #                                                                           df['population'].min(),
-    #                                                                           df['population'].max(),
-    #                                                                           subtract_from_one=False))
-    # df['we'] = labelize(normalized_population)
-
-    counter = 0
-    for row in df.to_dict('records'):
-        print counter
-        db.session.merge(Climate(**row))
-        counter += 1
-    db.session.commit()
+        counter = 0
+        for row in df.to_dict('records'):
+            print counter
+            db.session.merge(Climate(**row))
+            counter += 1
+        db.session.commit()

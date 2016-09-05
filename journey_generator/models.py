@@ -122,6 +122,8 @@ class Destinations(db.Model, SerializedModel):
     places_index_label = db.Column(db.Integer)
     population_label = db.Column(db.Integer)
     safety_score_label = db.Column(db.Integer)
+    environment_score = db.Column(db.Float)
+    environment_score_label = db.Column(db.Integer)
 
     @hybrid_property
     def avg_price(self):

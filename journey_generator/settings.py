@@ -120,6 +120,13 @@ api_fields = [
         "action": "append"
     },
     {
+        "name": "environment_score_label",
+        "api_name": "environment_score_label",
+        "type": str,
+        "default": None,
+        "action": "append"
+    },
+    {
         "name": "attractions_score_label",
         "api_name": "attractions_score",
         "type": str,
