@@ -124,6 +124,7 @@ class Destinations(db.Model, SerializedModel):
     safety_score_label = db.Column(db.Integer)
     environment_score = db.Column(db.Float)
     environment_score_label = db.Column(db.Integer)
+    tripadvisor_link = db.Column(db.String)
 
     @hybrid_property
     def avg_price(self):

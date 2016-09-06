@@ -1,10 +1,14 @@
 from datetime import date
+import socket
 
-# SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://carmstrong@/journey_generator'
+DEBUG = socket.gethostname() == 'carmstrong'
+
 SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://carmstrong:Dockside6@104.131.106.228:5432/journey_generator'
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 DARK_SKY_API_KEY = '7ae0a164364f2b21edef14fe7beca649'
+GOOGLE_CUSTOM_SEARCH_ID = "011829237068144604737:dslw-th29yq"
+GOOGLE_API_KEY = "AIzaSyAVoj0jf6FFrW0bt3oY6wIAEomi9Zfn6aU"
 
 api_fields = [
     {
@@ -164,6 +168,13 @@ api_fields = [
     {
         "name": "avg_price",
         "api_name": "avg_price",
+        "type": str,
+        "default": None,
+        "action": "append"
+    },
+    {
+        "name": "tripadvisor_link",
+        "api_name": "tripadvisor_link",
         "type": str,
         "default": None,
         "action": "append"
